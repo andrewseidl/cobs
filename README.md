@@ -6,7 +6,7 @@ How is CoBS different?
 
 - CoBS will be open source and free to use behind your firewall.
 - CoBS supports multiple CPU architectures, including ARM and POWER.
-- CoBS doesn't have a clever name. Please suggest one: see Issue #1.
+- CoBS doesn't have a clever name. Please suggest one: see [Issue #1](https://github.com/gophergala/cobs/issues/1).
 
 ## Frequently Asked Questions
 
