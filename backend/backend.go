@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"net/http"
@@ -24,7 +24,7 @@ func BuildStatusHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte(mux.Vars(r)["imageid"]))
 }
 
-func main() {
+func Run() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
 

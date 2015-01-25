@@ -1,11 +1,12 @@
-package main
+package builder
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iron-io/iron_go/mq"
 	"syscall"
 	"time"
+
+	"github.com/iron-io/iron_go/mq"
 )
 
 type Image struct {
@@ -59,9 +60,8 @@ func GetBuildRequests(queue *mq.Queue, wait time.Duration) <-chan Message {
 }
 
 func main() {
-	//machine := GetMachineName()
+func Run() {
 
-	queue := mq.New("builder-x86_64")
 
 	request := GetBuildRequests(queue, 10*time.Second)
 
