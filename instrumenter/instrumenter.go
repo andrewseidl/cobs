@@ -3,9 +3,11 @@ package instrumenter
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"log"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/gophergala/cobs/types"
 	"github.com/iron-io/iron_go/mq"
 )
 
@@ -21,6 +23,9 @@ func Run(imageId string) {
 	defer rc.Close()
 
 	df, _ := redis.String(rc.Do("GET", "dockerfile-"+imageId))
+	info, _ := redis.Bytes(rc.Do("GET", "info-"+imageId))
+	var image types.ImageInfo
+	json.Unmarshal(info, &image)
 
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
@@ -49,7 +54,9 @@ func Run(imageId string) {
 	}
 
 	rc.Do("SET", "tarball-"+imageId, buf.Bytes())
-	queue := mq.New("builder-x86_64")
+	log.Println("image: " + image.Architecture)
+	queue := mq.New("builder-" + image.Architecture)
+	log.Println("qname: " + queue.Name)
 	id, err := queue.PushString(imageId)
 	if err != nil {
 		log.Fatalf("error pushing to queue: %s", err)

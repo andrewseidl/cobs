@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/codegangsta/negroni"
 	"github.com/gophergala/cobs/hunter"
+	"github.com/gophergala/cobs/types"
 	"github.com/gorilla/mux"
 )
 
@@ -44,14 +46,58 @@ func BuildStatusHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte(mux.Vars(r)["imageid"]))
 }
 
-func BuildHandler(rw http.ResponseWriter, r *http.Request) {
+func RequestImageBuild(repository, arch, tag string) string {
+	imageId := uuid.New()
+	rc.Do("SET", "url-"+imageId, repository)
+	rc.Do("SET", "name-"+repository+"-arch-"+arch+"-tag-"+tag, imageId)
+	data, _ := json.Marshal(types.ImageInfo{repository, arch, tag})
+	rc.Do("SET", "info-"+imageId, data)
+	go hunter.GoHunting(imageId)
+
+	return imageId
+}
+
+//func BuildHandler(rw http.ResponseWriter, r *http.Request) {
+//	//imageid := mux.Vars(r)["imageid"]
+//	switch r.Method {
+//	case "POST":
+//		repository := r.FormValue("repository")
+//		tag := r.FormValue("tag")
+//		arch := r.FormValue("arch")
+//		imageId := RequestImageBuild(repository, arch, tag)
+//		rw.Write([]byte(imageId))
+//	default:
+//		data, _ := redis.Bytes(rc.Do("GET", "tarball"))
+//		rw.Write(data)
+//	}
+//}
+
+func RepoSearch(repo string) string {
+	res := hunter.SearchDockerRegistry(repo)
+	return res[0].Name
+
+}
+
+func SearchHandler(rw http.ResponseWriter, r *http.Request) {
 	//imageid := mux.Vars(r)["imageid"]
 	switch r.Method {
 	case "POST":
 		repository := r.FormValue("repository")
-		imageId := uuid.New()
-		rc.Do("SET", "url-"+imageId, repository)
-		go hunter.GoHunting(imageId)
+		tag := r.FormValue("tag")
+		arch := r.FormValue("arch")
+
+		if tag == "" {
+			tag = "latest"
+		}
+		if arch == "" {
+			arch = "x8664"
+		}
+
+		name := RepoSearch(repository)
+		imageId, _ := redis.String(rc.Do("GET", "name-"+name+"-arch-"+arch+"-tag-"+tag))
+		if len(imageId) == 0 {
+			imageId = RequestImageBuild(name, arch, tag)
+		}
 		rw.Write([]byte(imageId))
 	default:
 		data, _ := redis.Bytes(rc.Do("GET", "tarball"))
@@ -74,7 +120,8 @@ func Run() {
 	r.HandleFunc("/api/v1/build/{imageid}/tarball", BuildTarballHandler)
 	r.HandleFunc("/api/v1/build/{imageid}/dockerfile", BuildDockerfileHandler)
 	r.HandleFunc("/api/v1/build/{imageid}", BuildStatusHandler)
-	r.HandleFunc("/api/v1/build/", BuildHandler)
+	//r.HandleFunc("/api/v1/build/", BuildHandler)
+	r.HandleFunc("/search", SearchHandler)
 
 	n := negroni.Classic()
 	n.UseHandler(r)
