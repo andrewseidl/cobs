@@ -7,6 +7,8 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/gophergala/cobs/backend"
 	"github.com/gophergala/cobs/builder"
+	"github.com/gophergala/cobs/hunter"
+	"github.com/gophergala/cobs/instrumenter"
 )
 
 func main() {
@@ -15,6 +17,13 @@ func main() {
 	app.Usage = "Container Build Service"
 	app.Commands = []cli.Command{
 		{
+			Name: "backend",
+			Action: func(c *cli.Context) {
+				fmt.Println("run backend")
+				backend.Run()
+			},
+		},
+		{
 			Name: "builder",
 			Action: func(c *cli.Context) {
 				fmt.Println("run builder")
@@ -22,10 +31,27 @@ func main() {
 			},
 		},
 		{
-			Name: "backend",
+			Name: "hunter",
 			Action: func(c *cli.Context) {
-				fmt.Println("run backend")
-				backend.Run()
+				fmt.Println("run hunter")
+				hunter.Run()
+			},
+		},
+		{
+			Name: "instrumenter",
+			Action: func(c *cli.Context) {
+				fmt.Println("run instrumenter")
+				instrumenter.Run()
+			},
+		},
+		{
+			Name: "all",
+			Action: func(c *cli.Context) {
+				fmt.Println("run all")
+				go backend.Run()
+				go builder.Run()
+				go hunter.Run()
+				go instrumenter.Run()
 			},
 		},
 	}
