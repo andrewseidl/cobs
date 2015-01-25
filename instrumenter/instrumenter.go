@@ -4,9 +4,21 @@ import (
 	"archive/tar"
 	"bytes"
 	"log"
+
+	"github.com/garyburd/redigo/redis"
 )
 
-func Run() {
+var rc redis.Conn
+
+func Run(imageId string) {
+	var err error
+	log.Println("Connecting to Redis")
+	rc, err = redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		log.Fatalf("Issues with redis: %s", err)
+	}
+	defer rc.Close()
+
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 
@@ -33,4 +45,5 @@ func Run() {
 		log.Fatalln(err)
 	}
 
+	rc.Do("SET", "tarball-"+imageId, buf.Bytes())
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/gophergala/cobs/backend"
 	"github.com/gophergala/cobs/builder"
 	"github.com/gophergala/cobs/hunter"
-	"github.com/gophergala/cobs/instrumenter"
 )
 
 func main() {
@@ -37,13 +36,13 @@ func main() {
 				hunter.Run()
 			},
 		},
-		{
-			Name: "instrumenter",
-			Action: func(c *cli.Context) {
-				fmt.Println("run instrumenter")
-				instrumenter.Run()
-			},
-		},
+		//		{
+		//			Name: "instrumenter",
+		//			Action: func(c *cli.Context) {
+		//				fmt.Println("run instrumenter")
+		//				instrumenter.Run()
+		//			},
+		//		},
 		{
 			Name: "all",
 			Action: func(c *cli.Context) {

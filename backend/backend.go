@@ -7,7 +7,9 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 
+	"code.google.com/p/go-uuid/uuid"
 	"github.com/codegangsta/negroni"
+	"github.com/gophergala/cobs/instrumenter"
 	"github.com/gorilla/mux"
 )
 
@@ -40,6 +42,20 @@ func BuildStatusHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte(mux.Vars(r)["imageid"]))
 }
 
+func BuildHandler(rw http.ResponseWriter, r *http.Request) {
+	//imageid := mux.Vars(r)["imageid"]
+	switch r.Method {
+	case "POST":
+		repository := r.FormValue("repository")
+		imageid := uuid.New()
+		go instrumenter.Run(repository)
+		rw.Write([]byte(imageid))
+	default:
+		data, _ := redis.Bytes(rc.Do("GET", "tarball"))
+		rw.Write(data)
+	}
+}
+
 func Run() {
 	var err error
 	log.Println("Connecting to Redis")
@@ -55,6 +71,7 @@ func Run() {
 	r.HandleFunc("/api/v1/build/{imageid}/tarball", BuildTarballHandler)
 	r.HandleFunc("/api/v1/build/{imageid}/dockerfile", BuildDockerfileHandler)
 	r.HandleFunc("/api/v1/build/{imageid}", BuildStatusHandler)
+	r.HandleFunc("/api/v1/build/", BuildHandler)
 
 	n := negroni.Classic()
 	n.UseHandler(r)
