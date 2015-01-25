@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/iron-io/iron_go/mq"
 )
 
 var rc redis.Conn
@@ -19,13 +20,15 @@ func Run(imageId string) {
 	}
 	defer rc.Close()
 
+	df, _ := redis.String(rc.Do("GET", "dockerfile-"+imageId))
+
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 
 	var files = []struct {
 		Name, Body string
 	}{
-		{"Dockerfile.txt", "FROM debian"},
+		{"Dockerfile.txt", df},
 	}
 
 	for _, file := range files {
@@ -46,4 +49,10 @@ func Run(imageId string) {
 	}
 
 	rc.Do("SET", "tarball-"+imageId, buf.Bytes())
+	queue := mq.New("builder-x86_64")
+	id, err := queue.PushString(imageId)
+	if err != nil {
+		log.Fatalf("error pushing to queue: %s", err)
+	}
+	log.Printf("build queued: %s\n", id)
 }

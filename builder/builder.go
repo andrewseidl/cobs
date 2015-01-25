@@ -1,8 +1,10 @@
 package builder
 
 import (
-	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"syscall"
 	"time"
 
@@ -59,6 +61,21 @@ func GetBuildRequests(queue *mq.Queue, wait time.Duration) <-chan Message {
 	return c
 }
 
+func GetDockerfile(imageId string) {
+	u := "http://localhost:3000/api/v1/build/" + imageId + "/dockerfile"
+	res, err := http.Get(u)
+	if err != nil {
+		log.Fatalf("error retrieving: %s", err)
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf("error reading body: %s", err)
+	}
+	log.Println(string(body))
+}
+
 func Run() {
 	machine := GetMachineName()
 	queueName := string("builder-" + machine)
@@ -70,9 +87,9 @@ func Run() {
 	for {
 		select {
 		case msg := <-request:
-			var mymsg Image
-			json.Unmarshal([]byte(msg.Body), &mymsg)
-			fmt.Println(mymsg)
+			log.Println(msg.Body)
+			imageId := msg.Body
+			go GetDockerfile(imageId)
 			queue.DeleteMessage(msg.Id)
 		}
 	}

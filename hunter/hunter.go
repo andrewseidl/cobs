@@ -6,8 +6,10 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/gophergala/cobs/instrumenter"
 )
 
 type (
@@ -102,6 +104,10 @@ func GoHunting(imageId string) {
 		df = GetRawDockerfileFromRegistry(res.Name)
 	}
 
-	log.Println(df)
+	if len(strings.TrimSpace(df)) > 0 {
+		rc.Do("SET", "dockerfile-"+imageId, df)
+		go instrumenter.Run(imageId)
+
+	}
 
 }

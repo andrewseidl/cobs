@@ -35,7 +35,9 @@ func BuildTarballHandler(rw http.ResponseWriter, r *http.Request) {
 }
 
 func BuildDockerfileHandler(rw http.ResponseWriter, r *http.Request) {
-	rw.Write([]byte(mux.Vars(r)["imageid"]))
+	imageId := mux.Vars(r)["imageid"]
+	data, _ := redis.Bytes(rc.Do("GET", "dockerfile-"+imageId))
+	rw.Write(data)
 }
 
 func BuildStatusHandler(rw http.ResponseWriter, r *http.Request) {
