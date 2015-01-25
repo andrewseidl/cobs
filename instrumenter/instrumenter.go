@@ -1,4 +1,4 @@
-package main
+package instrumenter
 
 import (
 	"archive/tar"
@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func main() {
+func Run() {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 
