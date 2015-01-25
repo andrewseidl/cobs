@@ -20,6 +20,8 @@ func ParseGitHubURL(urlstr string) GitHubContent {
 	if err != nil {
 		log.Fatalf("Error parsing: ", err)
 	}
+
+	//look into SplitN
 	path := strings.Split(u.Path, "/")
 
 	if len(path) > 3 {
