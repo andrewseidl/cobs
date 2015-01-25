@@ -18,7 +18,18 @@ func HomeHandler(rw http.ResponseWriter, r *http.Request) {
 }
 
 func BuildTarballHandler(rw http.ResponseWriter, r *http.Request) {
-	rw.Write([]byte(mux.Vars(r)["imageid"]))
+	switch r.Method {
+	//	case "POST":
+	//		//var buf []byte
+	//		file, _, _ := r.FormFile("file")
+	//		defer file.Close()
+	//		data, _ := ioutil.ReadAll(file)
+	//		//file.Read(buf)
+	//		rc.Do("SET", mux.Vars(r)["imageid"], data)
+	default:
+		data, _ := redis.Bytes(rc.Do("GET", mux.Vars(r)["imageid"]))
+		rw.Write(data)
+	}
 }
 
 func BuildDockerfileHandler(rw http.ResponseWriter, r *http.Request) {
