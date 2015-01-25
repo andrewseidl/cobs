@@ -1,12 +1,17 @@
 package backend
 
 import (
+	"log"
 	"net/http"
 	"os"
+
+	"github.com/garyburd/redigo/redis"
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 )
+
+var rc redis.Conn
 
 func HomeHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("hello"))
@@ -25,6 +30,14 @@ func BuildStatusHandler(rw http.ResponseWriter, r *http.Request) {
 }
 
 func Run() {
+	var err error
+	log.Println("Connecting to Redis")
+	rc, err = redis.Dial("tcp", "localhost:6379")
+	if err != nil {
+		log.Fatalf("Issues with redis: %s", err)
+	}
+	defer rc.Close()
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
 
