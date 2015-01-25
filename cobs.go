@@ -49,9 +49,7 @@ func main() {
 			Action: func(c *cli.Context) {
 				fmt.Println("run all")
 				go backend.Run()
-				go builder.Run()
-				go hunter.Run()
-				go instrumenter.Run()
+				builder.Run()
 			},
 		},
 	}
