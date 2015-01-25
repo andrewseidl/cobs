@@ -29,7 +29,7 @@ func UtsnameToByte(name [65]int8) []byte {
 		}
 		b[i] = byte(name[i])
 	}
-	return b
+	return b[:i]
 }
 
 func GetMachineName() string {
@@ -59,9 +59,11 @@ func GetBuildRequests(queue *mq.Queue, wait time.Duration) <-chan Message {
 	return c
 }
 
-func main() {
 func Run() {
+	machine := GetMachineName()
+	queueName := string("builder-" + machine)
 
+	queue := mq.New(queueName)
 
 	request := GetBuildRequests(queue, 10*time.Second)
 
