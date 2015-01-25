@@ -7,7 +7,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/gophergala/cobs/backend"
 	"github.com/gophergala/cobs/builder"
-	"github.com/gophergala/cobs/hunter"
 )
 
 func main() {
@@ -29,13 +28,13 @@ func main() {
 				builder.Run()
 			},
 		},
-		{
-			Name: "hunter",
-			Action: func(c *cli.Context) {
-				fmt.Println("run hunter")
-				hunter.Run()
-			},
-		},
+		//{
+		//	Name: "hunter",
+		//	Action: func(c *cli.Context) {
+		//		fmt.Println("run hunter")
+		//		hunter.Run()
+		//	},
+		//},
 		//		{
 		//			Name: "instrumenter",
 		//			Action: func(c *cli.Context) {

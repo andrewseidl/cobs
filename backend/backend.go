@@ -9,7 +9,7 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/codegangsta/negroni"
-	"github.com/gophergala/cobs/instrumenter"
+	"github.com/gophergala/cobs/hunter"
 	"github.com/gorilla/mux"
 )
 
@@ -47,9 +47,10 @@ func BuildHandler(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		repository := r.FormValue("repository")
-		imageid := uuid.New()
-		go instrumenter.Run(repository)
-		rw.Write([]byte(imageid))
+		imageId := uuid.New()
+		rc.Do("SET", "url-"+imageId, repository)
+		go hunter.GoHunting(imageId)
+		rw.Write([]byte(imageId))
 	default:
 		data, _ := redis.Bytes(rc.Do("GET", "tarball"))
 		rw.Write(data)
