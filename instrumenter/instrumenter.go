@@ -54,9 +54,7 @@ func Run(imageId string) {
 	}
 
 	rc.Do("SET", "tarball-"+imageId, buf.Bytes())
-	log.Println("image: " + image.Architecture)
 	queue := mq.New("builder-" + image.Architecture)
-	log.Println("qname: " + queue.Name)
 	id, err := queue.PushString(imageId)
 	if err != nil {
 		log.Fatalf("error pushing to queue: %s", err)

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/garyburd/redigo/redis"
 
@@ -18,7 +19,7 @@ import (
 var rc redis.Conn
 
 func HomeHandler(rw http.ResponseWriter, r *http.Request) {
-	rw.Write([]byte("hello"))
+	rw.Write([]byte("Nothing here yet. Try: \n\n  curl -X POST -F repository=redis -F arch=armv7l http://cobs.aas.io/search"))
 }
 
 func BuildTarballHandler(rw http.ResponseWriter, r *http.Request) {
@@ -42,15 +43,27 @@ func BuildDockerfileHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write(data)
 }
 
+func ImageInfoHandler(rw http.ResponseWriter, r *http.Request) {
+	imageId := mux.Vars(r)["imageid"]
+	data, _ := redis.Bytes(rc.Do("GET", "info-"+imageId))
+	rw.Write(data)
+}
+
 func BuildStatusHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte(mux.Vars(r)["imageid"]))
+}
+
+func MakeNewImageName(name, arch string) string {
+	n := strings.Replace(name, "/", "-", -1)
+	return "cobs" + arch + "/" + n
 }
 
 func RequestImageBuild(repository, arch, tag string) string {
 	imageId := uuid.New()
 	rc.Do("SET", "url-"+imageId, repository)
 	rc.Do("SET", "name-"+repository+"-arch-"+arch+"-tag-"+tag, imageId)
-	data, _ := json.Marshal(types.ImageInfo{repository, arch, tag})
+	newName := MakeNewImageName(repository, arch)
+	data, _ := json.Marshal(types.ImageInfo{repository, newName, arch, tag})
 	rc.Do("SET", "info-"+imageId, data)
 	go hunter.GoHunting(imageId)
 
@@ -93,16 +106,36 @@ func SearchHandler(rw http.ResponseWriter, r *http.Request) {
 			arch = "x8664"
 		}
 
-		name := RepoSearch(repository)
-		imageId, _ := redis.String(rc.Do("GET", "name-"+name+"-arch-"+arch+"-tag-"+tag))
+		imageId, _ := redis.String(rc.Do("GET", "name-"+repository+"-arch-"+arch+"-tag-"+tag))
 		if len(imageId) == 0 {
-			imageId = RequestImageBuild(name, arch, tag)
+			name := RepoSearch(repository)
+			imageId, _ = redis.String(rc.Do("GET", "name-"+name+"-arch-"+arch+"-tag-"+tag))
+			if len(imageId) == 0 {
+				imageId = RequestImageBuild(name, arch, tag)
+			}
 		}
-		rw.Write([]byte(imageId))
+		rw.Write([]byte("http://cobs.aas.io/api/v1/info/" + imageId))
 	default:
 		data, _ := redis.Bytes(rc.Do("GET", "tarball"))
 		rw.Write(data)
 	}
+}
+
+func FakeHandler(rw http.ResponseWriter, r *http.Request) {
+	repository := r.FormValue("repository")
+	newName := r.FormValue("new")
+	tag := r.FormValue("tag")
+	arch := r.FormValue("arch")
+
+	imageId := uuid.New()
+	rc.Do("SET", "url-"+imageId, repository)
+	rc.Do("SET", "name-"+repository+"-arch-"+arch+"-tag-"+tag, imageId)
+	data, _ := json.Marshal(types.ImageInfo{repository, newName, arch, tag})
+	rc.Do("SET", "info-"+imageId, data)
+
+	log.Println(data)
+	rw.Write(data)
+
 }
 
 func Run() {
@@ -120,6 +153,9 @@ func Run() {
 	r.HandleFunc("/api/v1/build/{imageid}/tarball", BuildTarballHandler)
 	r.HandleFunc("/api/v1/build/{imageid}/dockerfile", BuildDockerfileHandler)
 	r.HandleFunc("/api/v1/build/{imageid}", BuildStatusHandler)
+	r.HandleFunc("/api/v1/info/{imageid}", ImageInfoHandler)
+	r.HandleFunc("/api/v1/build/fake/", FakeHandler)
+
 	//r.HandleFunc("/api/v1/build/", BuildHandler)
 	r.HandleFunc("/search", SearchHandler)
 
